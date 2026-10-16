@@ -47,12 +47,17 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     emit(TodoLoaded(await repository.getAll(), filter: nextFilter));
   }
 
-  /// If the active filter would hide the updated todo, follow it to the new status.
-  TodoStatus? _filterAfterStatusChange(TodoStatus newStatus) {
+  /// Keep the task visible after status change.
+  /// If the current tab would hide it (e.g. Pending → Done), jump to All
+  /// so the checkbox/status update is visible without manually switching tabs.
+  ({TodoStatus? filter, bool clearFilter}) _visibilityAfterStatusChange(
+    TodoStatus newStatus,
+  ) {
     final current = _currentFilter;
-    if (current == null) return null;
-    if (current == newStatus) return current;
-    return newStatus;
+    if (current == null || current == newStatus) {
+      return (filter: current, clearFilter: false);
+    }
+    return (filter: null, clearFilter: true);
   }
 
   Future<void> _onLoadTodos(LoadTodos event, Emitter<TodoState> emit) async {
@@ -78,9 +83,11 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
         isCompleted: event.status == TodoStatus.done,
       );
       await repository.add(todo);
+      final visibility = _visibilityAfterStatusChange(event.status);
       await _emitLoaded(
         emit,
-        filter: _filterAfterStatusChange(event.status),
+        filter: visibility.filter,
+        clearFilter: visibility.clearFilter,
       );
     } catch (e) {
       emit(TodoFailure(e.toString()));
@@ -96,9 +103,11 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       final todo = todos.firstWhere((t) => t.id == event.id);
       todo.applyStatus(event.status);
       await repository.update(todo);
+      final visibility = _visibilityAfterStatusChange(event.status);
       await _emitLoaded(
         emit,
-        filter: _filterAfterStatusChange(event.status),
+        filter: visibility.filter,
+        clearFilter: visibility.clearFilter,
       );
     } catch (e) {
       emit(TodoFailure(e.toString()));
@@ -114,9 +123,11 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
           : TodoStatus.done;
       todo.applyStatus(next);
       await repository.update(todo);
+      final visibility = _visibilityAfterStatusChange(next);
       await _emitLoaded(
         emit,
-        filter: _filterAfterStatusChange(next),
+        filter: visibility.filter,
+        clearFilter: visibility.clearFilter,
       );
     } catch (e) {
       emit(TodoFailure(e.toString()));

@@ -23,6 +23,7 @@ class TodoTile extends StatelessWidget {
     final createdAt = todo.resolvedCreatedAt;
 
     return Container(
+      key: ValueKey('${todo.id}-${todo.resolvedStatus}-${todo.isCompleted}'),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.card,

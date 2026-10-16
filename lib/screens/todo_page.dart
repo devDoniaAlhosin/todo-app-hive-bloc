@@ -159,7 +159,13 @@ class TodoPage extends StatelessWidget {
                                     ),
                                     itemCount: visible.length,
                                     itemBuilder: (context, index) {
-                                      return TodoTile(todo: visible[index]);
+                                      final todo = visible[index];
+                                      return TodoTile(
+                                        key: ValueKey(
+                                          '${todo.id}-${todo.resolvedStatus}',
+                                        ),
+                                        todo: todo,
+                                      );
                                     },
                                   ),
                       ),
